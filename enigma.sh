@@ -68,17 +68,10 @@ function read_file() {
 function encrypt_file() {
   printf "%s\n" "$filename_msg" && read file_name
   if [[ -f "$file_name" ]]; then
-    echo "Enter password:" && read password
+    echo "Enter password:" && read -s password
     output_file="$(printf "%s.enc" "$file_name")"
     openssl enc -aes-256-cbc -e -pbkdf2 -nosalt -in "$file_name" -out "$output_file" -pass pass:"$password" &>/dev/null
-    exit_code=$?
-
-    if [[ $exit_code -ne 0 ]]; then
-      echo "Fail"
-    else
-      rm "$file_name"
-      printf "Success\n\n"
-    fi
+    remove_file_on_success "$file_name" $?
   else
     printf "%s\n\n" "$file_not_found"
   fi
@@ -87,20 +80,22 @@ function encrypt_file() {
 function decrypt_file() {
   printf "%s\n" "$filename_msg" && read file_name
   if [[ -f "$file_name" ]]; then
-    echo "Enter password:" && read password
+    echo "Enter password:" && read -s password
     name=$(echo "$file_name" | cut -d '.' -f 1)
     output_file="$(printf "%s.txt" "$name")"
     openssl enc -aes-256-cbc -d -pbkdf2 -nosalt -in "$file_name" -out "$output_file" -pass pass:"$password" &>/dev/null
-    exit_code=$?
-
-    if [[ $exit_code -ne 0 ]]; then
-      echo "Fail"
-    else
-      rm "$file_name"
-      printf "Success\n\n"
-    fi
+    remove_file_on_success "$file_name" $?
   else
     printf "%s\n\n" "$file_not_found"
+  fi
+}
+
+function remove_file_on_success() {
+  if [[ $2 -ne 0 ]]; then
+    echo "Fail"
+  else
+    rm "$1"
+    printf "Success\n\n"
   fi
 }
 
