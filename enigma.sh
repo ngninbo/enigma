@@ -32,8 +32,8 @@ function main() {
     0) echo "See you later!" && exit;;
     1) create_file ;;
     2) read_file ;;
-    3) encrypt_file ;;
-    4) decrypt_file ;;
+    3) ssl_cipher "e" ;;
+    4) ssl_cipher "d" ;;
     *)
       echo "Invalid option!"
       ;;
@@ -65,25 +65,12 @@ function read_file() {
   fi
 }
 
-function encrypt_file() {
+function ssl_cipher() {
   printf "%s\n" "$filename_msg" && read file_name
   if [[ -f "$file_name" ]]; then
     echo "Enter password:" && read -s password
-    output_file="$(printf "%s.enc" "$file_name")"
-    openssl enc -aes-256-cbc -e -pbkdf2 -nosalt -in "$file_name" -out "$output_file" -pass pass:"$password" &>/dev/null
-    remove_file_on_success "$file_name" $?
-  else
-    printf "%s\n\n" "$file_not_found"
-  fi
-}
-
-function decrypt_file() {
-  printf "%s\n" "$filename_msg" && read file_name
-  if [[ -f "$file_name" ]]; then
-    echo "Enter password:" && read -s password
-    name=$(echo "$file_name" | cut -d '.' -f 1)
-    output_file="$(printf "%s.txt" "$name")"
-    openssl enc -aes-256-cbc -d -pbkdf2 -nosalt -in "$file_name" -out "$output_file" -pass pass:"$password" &>/dev/null
+    output_file="$([[ $1 == "e" ]] && echo "$file_name.enc" || echo "${file_name%.*}")"
+    openssl enc -aes-256-cbc "-$1" -pbkdf2 -nosalt -in "$file_name" -out "$output_file" -pass pass:"$password" &>/dev/null
     remove_file_on_success "$file_name" $?
   else
     printf "%s\n\n" "$file_not_found"
@@ -120,6 +107,28 @@ function decrypt_or_encrypt_text() {
   *) ;;
 
   esac
+}
+
+function encrypt_file() {
+  printf "%s\n" "$filename_msg" && read filename
+  if [[ -f "$filename" ]]; then
+    text="$(encrypt_text "$(cat "$filename")")"
+    echo "$text" >> "$filename.esc"
+  else
+    printf "%s\n\n" "$file_not_found"
+  fi
+}
+
+function decrypt_file() {
+  printf "%s\n" "$filename_msg" && read filename
+  if [[ -f "$filename" ]]; then
+    text="$(decrypt_text "$(cat "$filename")")"
+    echo "$text" >> "${filename%.*}"
+    rm "$filename"
+    printf "Success\n\n"
+  else
+    printf "%s\n\n" "$file_not_found"
+  fi
 }
 
 function encrypt_text() {
