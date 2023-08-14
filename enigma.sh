@@ -5,13 +5,13 @@ filename_msg="Enter the filename:"
 file_not_found="File not found!"
 z=90
 a=65
-#alphabet='A-Z'
-#shifted_alphabet="D-ZA-C"
+alphabet='A-Z'
+shifted_alphabet="D-ZA-C"
 space=32
 key=3
 
 function out_menu() {
-  options=("Exit" "Create a file" "Read a file" "Encrypt a file" "Decrypt a file")
+  options=("Exit" "Create a file" "Read a file" "Encrypt a file" "Decrypt a file" "Encrypt/Decrypt message (Caesar)")
 
   for ((i = 0; i < ${#options[@]}; i++)); do
     printf "%s. %s\n" "$i" "${options[i]}"
@@ -34,6 +34,7 @@ function main() {
     2) read_file ;;
     3) ssl_cipher "e" ;;
     4) ssl_cipher "d" ;;
+    5) encryption ;;
     *)
       echo "Invalid option!"
       ;;
@@ -91,7 +92,7 @@ function encryption() {
   if [[ "$command" =~ ^[d-e]$ ]]; then
     echo "Enter a message:" && read message
     if [[ $(check_input "$message") == true ]]; then
-      decrypt_or_encrypt_text "$message" "$command"
+      caesar_cipher "$message" "$command"
     else
       echo "This is not a valid message!" && exit
     fi
@@ -100,10 +101,10 @@ function encryption() {
   fi
 }
 
-function decrypt_or_encrypt_text() {
+function caesar_cipher() {
   case $2 in
-  e) encrypt_text "$1" ;;
-  d) decrypt_text "$1" ;;
+  e) caesar_encryption "$1" ;;
+  d) caesar_decryption "$1" ;;
   *) ;;
 
   esac
@@ -131,7 +132,7 @@ function decrypt_file() {
   fi
 }
 
-function encrypt_text() {
+function caesar_encryption() {
   message=$1
   result=""
   for ((i = 0; i < ${#message}; i++)); do
@@ -143,11 +144,11 @@ function encrypt_text() {
       result=$(printf "%s%s" "$result" "$(shift_letter_right "$char" $key)")
     fi
   done
-  #printf "Encrypted message:\n%s\n" "$(echo "$1" | tr $alphabet $shifted_alphabet)"
-  printf "%s\n" "$result"
+  printf "Encrypted message:\n%s\n" "$(echo "$1" | tr $alphabet $shifted_alphabet)"
+  #printf "%s\n" "$result"
 }
 
-function decrypt_text() {
+function caesar_decryption() {
   message=$1
   result=""
   for ((i = 0; i < ${#message}; i++)); do
@@ -159,8 +160,8 @@ function decrypt_text() {
       result=$(printf "%s%s" "$result" "$(shift_letter_left "$char" $key)")
     fi
   done
-  #printf "Decrypted message:\n%s\n" "$(echo "$1" | tr $shifted_alphabet $alphabet)"
-  printf "%s\n" "$result"
+  printf "Decrypted message:\n%s\n" "$(echo "$1" | tr $shifted_alphabet $alphabet)"
+  #printf "%s\n" "$result"
 }
 
 function check_input() {
@@ -179,12 +180,11 @@ function is_digit() {
 function shift_letter_right() {
   value=$(val "$1")
 
-  for ((i = 1; i <= $2; i++)); do
-    ((value++))
-    if [ "$value" -gt $z ]; then
-      value=$a
-    fi
-  done
+  ((value +=$2))
+
+  if [ "$value" -gt $z ]; then
+    value=$a
+  fi
 
   printf "%s" "$(character "$value")"
 }
@@ -192,12 +192,10 @@ function shift_letter_right() {
 function shift_letter_left() {
   value=$(val "$1")
 
-  for ((i = 1; i <= $2; i++)); do
-    ((value--))
-    if [ "$value" -lt $a ]; then
-      value=$z
-    fi
-  done
+  ((value -=$2))
+  if [ "$value" -lt $a ]; then
+    value=$z
+  fi
 
   printf "%s" "$(character "$value")"
 }
